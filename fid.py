@@ -21,7 +21,9 @@ import numpy as np
 import os
 import gzip, pickle
 import tensorflow as tf
-from scipy.misc import imread
+#from scipy.misc import imread, imresize
+import PIL
+from PIL import Image
 from scipy import linalg
 import pathlib
 import urllib
@@ -30,6 +32,8 @@ import warnings
 class InvalidFIDException(Exception):
     pass
 
+h = 256
+w = 128
 
 def create_inception_graph(pth):
     """Creates a graph from saved GraphDef file."""
@@ -192,7 +196,7 @@ def load_image_batch(files):
     Returns:
     -- A numpy array of dimensions (num_images,hi, wi, 3) representing the image pixel values.
     """
-    return np.array([imread(str(fn)).astype(np.float32) for fn in files])
+    return np.array([np.array(Image.open(str(fn)).resize((w, h, PIL.Image.BICUBIC))) for fn in files])
 
 def get_activations_from_files(files, sess, batch_size=50, verbose=False):
     """Calculates the activations of the pool_3 layer for all images.
@@ -282,11 +286,12 @@ def _handle_path(path, sess, low_profile=False):
         f.close()
     else:
         path = pathlib.Path(path)
-        files = list(path.glob('*.jpg')) + list(path.glob('*.png'))
+        # I use subdir so I change here.
+        files = list(path.glob('*/*.jpg')) + list(path.glob('*/*.png'))
         if low_profile:
             m, s = calculate_activation_statistics_from_files(files, sess)
         else:
-            x = np.array([imread(str(fn)).astype(np.float32) for fn in files])
+            x = np.array([ np.array(Image.open(str(fn)).resize((w, h), PIL.Image.BICUBIC)) for fn in files])
             m, s = calculate_activation_statistics(x, sess)
             del x #clean up memory
     return m, s
