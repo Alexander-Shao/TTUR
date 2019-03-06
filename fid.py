@@ -34,6 +34,7 @@ class InvalidFIDException(Exception):
 
 h = 256
 w = 128
+seed = 7
 
 def create_inception_graph(pth):
     """Creates a graph from saved GraphDef file."""
@@ -288,6 +289,11 @@ def _handle_path(path, sess, low_profile=False):
         path = pathlib.Path(path)
         # I use subdir so I change here.
         files = list(path.glob('*/*.jpg')) + list(path.glob('*/*.png'))
+        if len(files) > 12936:  # random select 12936 samples for evaluation
+            np.random.seed(seed)
+            rand_index = np.random.permutation(len(files))[0:12936]
+            files = list(files[i] for i in rand_index)
+
         if low_profile:
             m, s = calculate_activation_statistics_from_files(files, sess)
         else:
